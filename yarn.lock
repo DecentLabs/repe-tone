@@ -6373,6 +6373,10 @@ to-regex@^3.0.1, to-regex@^3.0.2:
     regex-not "^1.0.2"
     safe-regex "^1.1.0"
 
+tone@^13.4.9:
+  version "13.4.9"
+  resolved "https://registry.yarnpkg.com/tone/-/tone-13.4.9.tgz#c5e9f69d0cdea6d2fa03e108766b10d5f9185dde"
+
 topo@3.x.x:
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/topo/-/topo-3.0.3.tgz#d5a67fb2e69307ebeeb08402ec2a2a6f5f7ad95c"
