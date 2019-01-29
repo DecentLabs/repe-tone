@@ -3,16 +3,20 @@
     <h1>RepeTone</h1>
     <h2>Hear the sound and tell the space</h2>
     <div class="playground">
-      <button @click="play" class="play">play</button>
-      <div class="row">
-        <div class="input-group" v-for="interval in intervalAnswers">
-          <input type="radio" name="answer" :id="interval.name + 'answer'" :value="interval.name" v-model="answer"
-                 @change="checkInterval">
-          <label :for="interval.name + 'answer'">{{interval.label}}</label>
+      <button class="start" @click="startSession" v-if="!started">start session {{session}}</button>
+      <div v-if="started">
+        <button @click="play" class="play">play</button>
+        <div class="row">
+          <div class="input-group" v-for="interval in intervalAnswers">
+            <input type="radio" name="answer" :id="interval.name + 'answer'" :value="interval.name" v-model="answer"
+                   @change="checkInterval">
+            <label :for="interval.name + 'answer'">{{interval.label}}</label>
+          </div>
         </div>
+        <button @click="getNext" class="next" :class="result && 'show'">next</button>
       </div>
-      <button @click="getNext" class="next" :class="result && 'show'">play next</button>
     </div>
+
     <div class="settings">
       <div class="settings-column">
         <h2>direction</h2>
@@ -60,7 +64,12 @@
         answer: '',
         result: false,
         interval: '',
-        stats: []
+        stats: [],
+        session: 1,
+        sessionTotal: 10,
+        attempted: false,
+        counter: 0,
+        started: false
       }
     },
     computed: {
@@ -80,11 +89,14 @@
       }
     },
     methods: {
+      startSession() {
+        this.started = true
+      },
       play () {
         const noteB = addInterval(this.startNote, this.interval, this.selectedDirection)
 
-        this.sampler.triggerAttackRelease(this.startNote, '4n', 0, 0.7)
-        this.sampler.triggerAttackRelease(noteB, '4n', '4n', 0.7)
+        this.sampler.triggerAttackRelease(this.startNote, '4n', 0, 0.8)
+        this.sampler.triggerAttackRelease(noteB, '4n', '4n', 0.8)
       },
       checkInterval () {
         this.result = this.answer === this.interval
@@ -95,17 +107,24 @@
         return this.selectedIntervals[random]
       },
       getNext () {
+        this.counter++
         this.startNote = getRandomNote('piano')
         this.interval = this.getRandomInterval()
         this.result = false
         this.answer = ''
+        this.attempted = false
+        if (this.counter % this.sessionTotal === 0) {
+          this.started = false
+          this.session++
+        }
       },
       saveStats () {
         this.stats.forEach(item => {
-          if (item.name === this.interval) {
+          if (item.name === this.answer && !this.attempted) {
             item.total++
             item.found = this.result && item.found + 1
             item.accuracy = item.found / item.total
+            this.attempted = true
           }
         })
       },
@@ -116,8 +135,13 @@
           this.selectedIntervals = this.selectedIntervals.filter(i => i !== currentInterval)
         } else {
           this.selectedIntervals.push(currentInterval)
+          this.stats.push({
+            name: currentInterval,
+            total: 0,
+            found: 0,
+            accuracy: 0
+          })
         }
-        console.log(currentInterval, this.selectedIntervals)
       }
     },
     mounted () {
@@ -220,6 +244,11 @@
   .next {
     opacity: 0;
     background: #a373f8;
+  }
+
+  .start {
+    background: #4f34ad;
+    width: 200px;
   }
 
   .show {

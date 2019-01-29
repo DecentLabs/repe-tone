@@ -48,7 +48,7 @@ const intervals = [
   },
   {
     name: 'P8',
-    label: 'perfect 8th'
+    label: 'octave'
   }
 ]
 
