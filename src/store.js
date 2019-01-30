@@ -8,26 +8,17 @@ const recordTypes = {
     name: String,
     date: Date,
     found: Boolean,
-    session: Number,
+    session: Number
   }
 }
 
 const store = fortune(recordTypes, {
   adapter: [ indexedDBAdapter, {
-    name: 'db'
+    name: 'intervals db'
   } ]
 })
 
 // all returns promises:
-//
-// function createSession(records) {
-//   store.create(SESSION, records)
-// }
-//
-// function getSession(id) {
-//   store.find(SESSION, id)
-// }
-
 
 function createQuestion(name, session) {
   // records = random or generated intervals to ask
@@ -41,7 +32,7 @@ function createQuestion(name, session) {
 }
 
 function getQuestion(id) {
-  return store.find(QUESTION, id,)
+  return store.find(QUESTION, id)
 }
 
 function updateQuestion(id, found) {
@@ -49,7 +40,18 @@ function updateQuestion(id, found) {
     id,
     replace: { found }
   }
+
   return store.update(QUESTION, updates)
+}
+
+function getQuestionsBySession(session) {
+  const options = {
+    match: {
+      session
+    }
+  }
+
+  return store.find(QUESTION, undefined, {options})
 }
 
 export {
@@ -57,6 +59,7 @@ export {
   // getSession,
   createQuestion,
   getQuestion,
-  updateQuestion
+  updateQuestion,
+  getQuestionsBySession
 }
 

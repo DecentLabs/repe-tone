@@ -9,7 +9,7 @@
         <div class="row">
           <div class="input-group" v-for="interval in intervalAnswers">
             <input type="radio" name="answer" :id="interval.name + 'answer'" :value="interval.name" v-model="answer"
-                   @change="checkInterval">
+                   @change="setAnswer">
             <label :for="interval.name + 'answer'">{{interval.label}}</label>
           </div>
         </div>
@@ -43,7 +43,8 @@
 <script>
   import { samplesByInstrument } from '../utils/instruments'
   import { intervals, addInterval, getRandomNote } from '../utils/intervals'
-  import { createQuestion, getQuestion, updateQuestion } from '../store'
+  import { getSessionStats } from '../utils/stats'
+  import { createQuestion, getQuestion, updateQuestion, getQuestionsBySession } from '../store'
 
   /* global Tone */
   /* eslint-disable no-console */
@@ -64,10 +65,9 @@
         direction: 'asc',
         answer: '',
         result: false,
-        interval: '',
         stats: [],
         session: 1,
-        sessionTotal: 2,
+        sessionTotal: 3,
         attempted: false,
         counter: 0,
         started: false,
@@ -88,6 +88,9 @@
       },
       intervalIsSelected () {
         return (val) => this.selectedIntervals.indexOf(val) >= 0
+      },
+      currentInterval () {
+        return this.questions.length && this.questions[this.counter]
       }
     },
     methods: {
@@ -98,20 +101,31 @@
 
             if (i === this.sessionTotal - 1) {
               this.started = true
-              this.interval = this.questions[0].name
             }
           })
         }
       },
+      endSession() {
+        getQuestionsBySession(this.session).then(res => {
+          const result = res.payload.records
+          this.stats = getSessionStats(result)
+          this.started = false
+          this.session++
+        })
+      },
       play () {
-        const noteB = addInterval(this.startNote, this.interval, this.selectedDirection)
+        const noteB = addInterval(this.startNote, this.currentInterval.name, this.selectedDirection)
 
         this.sampler.triggerAttackRelease(this.startNote, '4n', 0, 0.8)
         this.sampler.triggerAttackRelease(noteB, '4n', '4n', 0.8)
       },
-      checkInterval () {
-        this.result = this.answer === this.interval
-        this.saveStats()
+      setAnswer () {
+        this.result = this.answer === this.currentInterval.name
+
+        if (!this.attempted) {
+          updateQuestion(this.currentInterval.id, this.result).then(() => console.log('answer updated'))
+          this.attempted = true
+        }
       },
       getRandomInterval () {
         const random = Math.floor(Math.random() * this.selectedIntervals.length)
@@ -120,24 +134,12 @@
       getNext () {
         this.counter++
         this.startNote = getRandomNote('piano')
-        this.interval = this.getRandomInterval()
         this.result = false
         this.answer = ''
         this.attempted = false
         if (this.counter % this.sessionTotal === 0) {
-          this.started = false
-          this.session++
+          this.endSession()
         }
-      },
-      saveStats () {
-        this.stats.forEach(item => {
-          if (item.name === this.answer && !this.attempted) {
-            item.total++
-            item.found = this.result && item.found + 1
-            item.accuracy = item.found / item.total
-            this.attempted = true
-          }
-        })
       },
       selectIntervals(event) {
         const currentInterval = event.target.value
@@ -164,14 +166,6 @@
       })
 
       this.startNote = getRandomNote('piano')
-      this.stats = this.selectedIntervals.map(i => {
-        return {
-          name: i,
-          total: 0,
-          found: 0,
-          accuracy: 0
-        }
-      })
     }
   }
 </script>
