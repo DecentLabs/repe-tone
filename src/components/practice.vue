@@ -43,6 +43,7 @@
 <script>
   import { samplesByInstrument } from '../utils/instruments'
   import { intervals, addInterval, getRandomNote } from '../utils/intervals'
+  import { createQuestion, getQuestion, updateQuestion } from '../store'
 
   /* global Tone */
   /* eslint-disable no-console */
@@ -66,10 +67,11 @@
         interval: '',
         stats: [],
         session: 1,
-        sessionTotal: 10,
+        sessionTotal: 2,
         attempted: false,
         counter: 0,
-        started: false
+        started: false,
+        questions: []
       }
     },
     computed: {
@@ -90,7 +92,16 @@
     },
     methods: {
       startSession() {
-        this.started = true
+        for (let i = 0; i < this.sessionTotal; i++) {
+          createQuestion(this.getRandomInterval(), this.session).then(({ payload }) => {
+            this.questions.push(payload.records[0])
+
+            if (i === this.sessionTotal - 1) {
+              this.started = true
+              this.interval = this.questions[0].name
+            }
+          })
+        }
       },
       play () {
         const noteB = addInterval(this.startNote, this.interval, this.selectedDirection)
@@ -153,7 +164,6 @@
       })
 
       this.startNote = getRandomNote('piano')
-      this.interval = this.getRandomInterval()
       this.stats = this.selectedIntervals.map(i => {
         return {
           name: i,
