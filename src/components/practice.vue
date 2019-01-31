@@ -15,7 +15,7 @@
         </div>
         <button @click="getNext" class="next" :class="result && 'show'">next</button>
       </div>
-      <button @click="overlayVisible = !overlayVisible" class="stats">see stats</button>
+      <button @click="toggleOverlay" class="stats">see stats</button>
     </div>
     <div class="settings">
       <div class="settings-column">
@@ -31,25 +31,19 @@
         <h2>select intervals</h2>
         <div class="column">
           <div v-for="item in intervals" class="input-group">
-            <input type="checkbox" :id="item.name+ 'int'" :value="item.name" :checked="intervalIsSelected(item.name)" @change="selectIntervals">
+            <input type="checkbox" :id="item.name+ 'int'" :value="item.name" :checked="intervalIsSelected(item.name)"
+                   @change="selectIntervals">
             <label :for="item.name + 'int'" :class="getIntervalProgress(item.name)">{{item.label}}</label>
           </div>
         </div>
       </div>
     </div>
-    <div class="overlay" v-show="overlayVisible" @click="overlayVisible = !overlayVisible">
-      <div class="overlay-inner">
-        <div v-for="stat in allStats">
-          <div>{{stat.name}}</div>
-          <div>{{stat.attempts}}</div>
-          <div>{{stat.accuracy}}</div>
-        </div>
-      </div>
-    </div>
+    <stats-overlay :stats="allStats" v-show="overlayVisible" @toggleOverlay="toggleOverlay"></stats-overlay>
   </div>
 </template>
 
 <script>
+  import StatsOverlay from './stats.vue'
   import { samplesByInstrument } from '../utils/instruments'
   import { intervals, addInterval, getRandomNote } from '../utils/intervals'
   import { getIntervalStats, getSortedSessionStats, getLastSession } from '../utils/stats'
@@ -61,6 +55,7 @@
 
   export default {
     name: 'practice-scene',
+    components: {StatsOverlay},
     data () {
       return {
         sampler: null,
@@ -84,7 +79,7 @@
         started: false,
         questions: [],
         overlayVisible: false,
-        progress: []
+        progress: [],
       }
     },
     computed: {
@@ -104,12 +99,12 @@
       },
       currentInterval () {
         return this.questions.length && this.questions[this.counter]
-      }
+      },
     },
     methods: {
-      startSession() {
+      startSession () {
         for (let i = 0; i < this.sessionTotal; i++) {
-          createQuestion(this.getRandomInterval(), this.session).then(({ payload }) => {
+          createQuestion(this.getRandomInterval(), this.session).then(({payload}) => {
             this.questions.push(payload.records[0])
 
             if (i === this.sessionTotal - 1) {
@@ -118,7 +113,7 @@
           })
         }
       },
-      endSession() {
+      endSession () {
         getQuestionsBySession(this.session).then(res => {
           this.sessionStats = getIntervalStats(res.payload.records)
 
@@ -145,7 +140,7 @@
           this.attempted = true
         }
       },
-      getIntervalProgress(item) {
+      getIntervalProgress (item) {
         const interval = this.progress.find(i => i.name == item)
         return interval && {good: interval.good, bad: interval.bad}
       },
@@ -163,7 +158,7 @@
           this.endSession()
         }
       },
-      selectIntervals(event) {
+      selectIntervals (event) {
         const currentInterval = event.target.value
 
         if (this.selectedIntervals.indexOf(currentInterval) > 0) {
@@ -174,9 +169,12 @@
             name: currentInterval,
             total: 0,
             found: 0,
-            accuracy: 0
+            accuracy: 0,
           })
         }
+      },
+      toggleOverlay() {
+        this.overlayVisible = !this.overlayVisible
       }
     },
     mounted () {
@@ -196,7 +194,7 @@
       getSessionQuestions().then(res => {
         this.session = res.payload.records.length && getLastSession(res.payload.records) + 1
       })
-    }
+    },
   }
 </script>
 
@@ -351,25 +349,5 @@
     width: 120px;
     height: 36px;
     margin: 0 5px 5px;
-  }
-
-  .overlay {
-    position: fixed;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(0, 0, 0, 0.12);
-  }
-
-  .overlay-inner {
-    width: 80%;
-    height: 70%;
-    padding: 40px;
-    background: #fff;
-    box-sizing: border-box;
   }
 </style>
