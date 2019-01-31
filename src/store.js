@@ -20,7 +20,7 @@ const store = fortune(recordTypes, {
 
 // all returns promises:
 
-function createQuestion(name, session) {
+function createQuestion(name, session = 1) {
   const records = {
     name,
     session,
@@ -43,7 +43,8 @@ function updateQuestion(id, found) {
 function getQuestions() {
   const options = {
     sort: {
-      name: true
+      name: true,
+      date: false
     }
   }
 
@@ -74,11 +75,16 @@ function getQuestionsBySession(session) {
   return store.find(QUESTION, undefined, options)
 }
 
+function deleteQuestion(id) {
+  return store.delete(QUESTION, id)
+}
+
 export {
   createQuestion,
   updateQuestion,
   getQuestions,
   getSessionQuestions,
-  getQuestionsBySession
+  getQuestionsBySession,
+  deleteQuestion
 }
 

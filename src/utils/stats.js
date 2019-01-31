@@ -38,19 +38,20 @@ function getIntervalStats(result) {
 
       stats.push({
         name,
-        accuracy: found / attempts,
+        accuracy: 0,
         attempts
       })
     } else {
       let currQuestion = stats.find(i => i.name === name)
       found += item.found
       attempts++
+
+      if (attempts <= 10) {
+        currQuestion.accuracy = found / attempts
+      }
       currQuestion.attempts = attempts
-      currQuestion.accuracy = found / attempts
     }
   })
-
-  console.log(stats)
 
   return stats
 }
@@ -67,64 +68,7 @@ function getLastSession(result) {
   return session
 }
 
-
-function getSortedSessionStats(result) {
-  let stats = []
-  let questions = []
-  let session = 0
-  let name = ''
-  let found = 0
-  let attempts
-  
-  result.forEach(item => {
-    if (item.session !== session) {
-      questions = []
-      session = item.session
-      attempts = 1
-      
-      if (item.name !== name) {
-        name = item.name
-        found = item.found
-
-        questions.push({
-          name,
-          accuracy: found / attempts,
-          attempts
-        })
-      } else {
-        let currQuestion = questions.find(i => i.name === name)
-        currQuestion.found = found + item.found
-        currQuestion.attempts += 1
-      }
-      stats.push({session, questions})
-    } else {
-      let currSession = stats.find(i => i.session === session)
-      attempts = 1
-
-      if (item.name !== name) {
-        attempts = 1
-        name = item.name
-        found = item.found
-
-        currSession.questions.push({
-          name,
-          accuracy: found / attempts,
-          attempts
-        })
-      } else {
-        let currQuestion = currSession.questions.find(i => i.name === name)
-        currQuestion.found = found + item.found
-        currQuestion.attempts += 1
-      }
-    }
-  })
-  
-  return stats
-}
-
-
 export {
   getIntervalStats,
-  getSortedSessionStats,
   getLastSession
 }

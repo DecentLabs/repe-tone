@@ -3,9 +3,10 @@
     <h1>RepeTone</h1>
     <h2>Hear the sound and tell the space</h2>
     <div class="playground">
-      <button class="start" @click="startSession" v-if="!started">start session {{session}}</button>
+      <!--<button class="start" @click="startSession" v-if="!started">start session {{session}}</button>-->
       <div v-if="started" class="column">
-        <button @click="play" class="play">play</button>
+        <h4>quest {{counter + 1}}</h4>
+        <button @click="play" class="play" :class="{disabled: loading}">play</button>
         <div class="row">
           <div class="input-group" v-for="interval in intervalAnswers">
             <input type="radio" name="answer" :id="interval.name + 'answer'" :value="interval.name" v-model="answer"
@@ -13,9 +14,12 @@
             <label :for="interval.name + 'answer'">{{interval.label}}</label>
           </div>
         </div>
-        <button @click="getNext" class="next" :class="result && 'show'">next</button>
+        <div v-if="attempted && !result">it's not that, try again!</div>
+        <div v-if="result">yayy, got it!</div>
+        <div class="loader" v-show="loading"></div>
+        <!--<button @click="getNext" class="next" :class="result && 'show'">next</button>-->
       </div>
-      <button @click="toggleOverlay" class="stats">see stats</button>
+      <!--<button @click="toggleOverlay" class="stats">see stats</button>-->
     </div>
     <div class="settings">
       <div class="settings-column">
@@ -46,8 +50,8 @@
   import StatsOverlay from './stats.vue'
   import { samplesByInstrument } from '../utils/instruments'
   import { intervals, addInterval, getRandomNote } from '../utils/intervals'
-  import { getIntervalStats, getSortedSessionStats, getLastSession } from '../utils/stats'
-  import { createQuestion, getQuestions, getSessionQuestions, updateQuestion, getQuestionsBySession } from '../store'
+  import { getIntervalStats, getLastSession } from '../utils/stats'
+  import { createQuestion, getQuestions, getSessionQuestions, updateQuestion, deleteQuestion } from '../store'
   import { checkProgress } from '../utils/repeater'
 
   /* global Tone */
@@ -76,10 +80,11 @@
         sessionTotal: 3,
         attempted: false,
         counter: 0,
-        started: false,
+        started: true,
         questions: [],
         overlayVisible: false,
         progress: [],
+        loading: false
       }
     },
     computed: {
@@ -102,46 +107,50 @@
       },
     },
     methods: {
-      startSession () {
-        for (let i = 0; i < this.sessionTotal; i++) {
-          createQuestion(this.getRandomInterval(), this.session).then(({payload}) => {
-            this.questions.push(payload.records[0])
-
-            if (i === this.sessionTotal - 1) {
-              this.started = true
-            }
-          })
-        }
-      },
-      endSession () {
-        getQuestionsBySession(this.session).then(res => {
-          this.sessionStats = getIntervalStats(res.payload.records)
-
-          this.started = false
-          this.session++
-        })
-        getQuestions().then(res => {
-          this.allStats = getIntervalStats(res.payload.records)
-          this.progress = checkProgress(this.allStats)
-        })
-      },
       play () {
         const noteB = addInterval(this.startNote, this.currentInterval.name, this.selectedDirection)
 
         this.sampler.triggerAttack(this.startNote, '+8n', 0.8)
         this.sampler.triggerAttack(noteB, '+2n', 0.8)
       },
+      addQuestion() {
+        this.loading = true
+        setTimeout(() => {
+          createQuestion(this.getRandomInterval()).then(({payload}) => {
+            this.questions.push(payload.records[0])
+            this.loading = false
+          })
+        }, 1000)
+      },
+      removeQuestion() {
+        const currentQuestion = this.questions[this.questions.length - 1]
+        console.log(currentQuestion)
+        return deleteQuestion(currentQuestion.id)
+      },
+      updateStats () {
+        getQuestions().then(res => {
+          console.log(res.payload.records)
+          this.allStats = getIntervalStats(res.payload.records)
+//          this.progress = checkProgress(this.allStats)
+        })
+      },
       setAnswer () {
         this.result = this.answer === this.currentInterval.name
         const found = this.result ? 1 : 0
 
         if (!this.attempted) {
-          updateQuestion(this.currentInterval.id, found).then(() => console.log('answer updated'))
+          updateQuestion(this.currentInterval.id, found).then(() => {
+            console.log('set answer')
+          })
           this.attempted = true
+        }
+
+        if (this.result) {
+          this.getNext()
         }
       },
       getIntervalProgress (item) {
-        const interval = this.progress.find(i => i.name == item)
+        const interval = this.progress.find(i => i.name === item)
         return interval && {good: interval.good, bad: interval.bad}
       },
       getRandomInterval () {
@@ -154,9 +163,8 @@
         this.result = false
         this.answer = ''
         this.attempted = false
-        if (this.counter % this.sessionTotal === 0) {
-          this.endSession()
-        }
+        this.updateStats()
+        this.addQuestion()
       },
       selectIntervals (event) {
         const currentInterval = event.target.value
@@ -165,13 +173,10 @@
           this.selectedIntervals = this.selectedIntervals.filter(i => i !== currentInterval)
         } else {
           this.selectedIntervals.push(currentInterval)
-          this.stats.push({
-            name: currentInterval,
-            total: 0,
-            found: 0,
-            accuracy: 0,
-          })
         }
+        this.removeQuestion().then(() => {
+          this.addQuestion()
+        })
       },
       toggleOverlay() {
         this.overlayVisible = !this.overlayVisible
@@ -187,13 +192,8 @@
 
       this.startNote = getRandomNote('piano')
 
-      getQuestions().then(res => {
-        this.allStats = getIntervalStats(res.payload.records)
-        this.progress = checkProgress(this.allStats)
-      })
-      getSessionQuestions().then(res => {
-        this.session = res.payload.records.length && getLastSession(res.payload.records) + 1
-      })
+      this.updateStats()
+      this.addQuestion()
     },
   }
 </script>
@@ -236,7 +236,11 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 100px;
+    margin-bottom: 60px;
+  }
+
+  .playground .column {
+    height: 200px;
   }
 
   .settings {
@@ -271,6 +275,10 @@
     border-radius: 5px;
     border: 0;
     cursor: pointer;
+  }
+
+  button.disabled {
+    opacity: 0.5;
   }
 
   .play {
@@ -349,5 +357,32 @@
     width: 120px;
     height: 36px;
     margin: 0 5px 5px;
+  }
+
+  .loader {
+    position: relative;
+    width: 160px;
+    height: 10px;
+  }
+
+  .loader::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 100%;
+    top: 0;
+    background: #39f9c6;
+    animation: bounce 1s alternate infinite;
+  }
+
+  @keyframes bounce {
+    0% {
+      left: 0;
+    }
+
+    100% {
+      left: 100%;
+    }
   }
 </style>
