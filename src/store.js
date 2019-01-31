@@ -7,7 +7,7 @@ const recordTypes = {
   [QUESTION]: {
     name: String,
     date: Date,
-    found: Boolean,
+    found: Number,
     session: Number
   }
 }
@@ -21,19 +21,15 @@ const store = fortune(recordTypes, {
 // all returns promises:
 
 function createQuestion(name, session) {
-  // records = random or generated intervals to ask
   const records = {
     name,
     session,
-    found: false,
+    found: 0,
     date: new Date()
   }
   return store.create(QUESTION, records)
 }
 
-function getQuestion(id) {
-  return store.find(QUESTION, id)
-}
 
 function updateQuestion(id, found) {
   const updates = {
@@ -44,22 +40,45 @@ function updateQuestion(id, found) {
   return store.update(QUESTION, updates)
 }
 
+function getQuestions() {
+  const options = {
+    sort: {
+      name: true
+    }
+  }
+
+  return store.find(QUESTION, undefined, options)
+}
+
+function getSessionQuestions() {
+  const options = {
+    sort: {
+      session: true,
+      name: true
+    }
+  }
+
+  return store.find(QUESTION, undefined, options)
+}
+
 function getQuestionsBySession(session) {
   const options = {
+    sort: {
+      name: true
+    },
     match: {
       session
     }
   }
 
-  return store.find(QUESTION, undefined, {options})
+  return store.find(QUESTION, undefined, options)
 }
 
 export {
-  // createSession,
-  // getSession,
   createQuestion,
-  getQuestion,
   updateQuestion,
+  getQuestions,
+  getSessionQuestions,
   getQuestionsBySession
 }
 

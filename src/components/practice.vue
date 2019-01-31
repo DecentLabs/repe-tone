@@ -15,8 +15,8 @@
         </div>
         <button @click="getNext" class="next" :class="result && 'show'">next</button>
       </div>
+      <button @click="overlayVisible = !overlayVisible" class="stats">see stats</button>
     </div>
-
     <div class="settings">
       <div class="settings-column">
         <h2>direction</h2>
@@ -37,14 +37,23 @@
         </div>
       </div>
     </div>
+    <div class="overlay" v-show="overlayVisible" @click="overlayVisible = !overlayVisible">
+      <div class="overlay-inner">
+        <div v-for="stat in allStats">
+          <div>{{stat.name}}</div>
+          <div>{{stat.attempts}}</div>
+          <div>{{stat.accuracy}}</div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
   import { samplesByInstrument } from '../utils/instruments'
   import { intervals, addInterval, getRandomNote } from '../utils/intervals'
-  import { getSessionStats } from '../utils/stats'
-  import { createQuestion, getQuestion, updateQuestion, getQuestionsBySession } from '../store'
+  import { getIntervalStats, getSortedSessionStats, getLastSession } from '../utils/stats'
+  import { createQuestion, getQuestions, getSessionQuestions, updateQuestion, getQuestionsBySession } from '../store'
 
   /* global Tone */
   /* eslint-disable no-console */
@@ -65,13 +74,15 @@
         direction: 'asc',
         answer: '',
         result: false,
-        stats: [],
+        allStats: [],
+        sessionStats: [],
         session: 1,
         sessionTotal: 3,
         attempted: false,
         counter: 0,
         started: false,
-        questions: []
+        questions: [],
+        overlayVisible: false
       }
     },
     computed: {
@@ -106,9 +117,16 @@
         }
       },
       endSession() {
+        getQuestions().then(res => {
+          const result = res.payload.records
+
+          console.log(getSortedSessionStats(result))
+        })
         getQuestionsBySession(this.session).then(res => {
           const result = res.payload.records
-          this.stats = getSessionStats(result)
+          this.stats = getIntervalStats(result)
+          console.log('map', this.stats)
+
           this.started = false
           this.session++
         })
@@ -121,9 +139,10 @@
       },
       setAnswer () {
         this.result = this.answer === this.currentInterval.name
+        const found = this.result ? 1 : 0
 
         if (!this.attempted) {
-          updateQuestion(this.currentInterval.id, this.result).then(() => console.log('answer updated'))
+          updateQuestion(this.currentInterval.id, found).then(() => console.log('answer updated'))
           this.attempted = true
         }
       },
@@ -166,6 +185,13 @@
       })
 
       this.startNote = getRandomNote('piano')
+
+      getQuestions().then(res => {
+        this.allStats = getIntervalStats(res.payload.records)
+      })
+      getSessionQuestions().then(res => {
+        this.session = res.payload.records.length && getLastSession(res.payload.records) + 1
+      })
     }
   }
 </script>
@@ -206,6 +232,9 @@
   }
 
   .playground {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     margin-bottom: 100px;
   }
 
@@ -231,6 +260,7 @@
   }
 
   button {
+    display: block;
     width: 120px;
     padding: 7px 12px;
     font-size: 17px;
@@ -239,6 +269,7 @@
     color: #fff;
     border-radius: 5px;
     border: 0;
+    cursor: pointer;
   }
 
   .play {
@@ -253,6 +284,12 @@
   .start {
     background: #4f34ad;
     width: 200px;
+  }
+
+  .stats {
+    color: #23222a;
+    border: 1px solid #23222a;
+    margin: 10px 0;
   }
 
   .show {
@@ -292,5 +329,25 @@
     width: 120px;
     height: 36px;
     margin: 0 5px 5px;
+  }
+
+  .overlay {
+    position: fixed;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.12);
+  }
+
+  .overlay-inner {
+    width: 80%;
+    height: 70%;
+    padding: 40px;
+    background: #fff;
+    box-sizing: border-box;
   }
 </style>
