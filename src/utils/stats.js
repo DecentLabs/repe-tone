@@ -43,10 +43,14 @@ function getIntervalStats(result) {
       })
     } else {
       let currQuestion = stats.find(i => i.name === name)
-      currQuestion.found = found + item.found
-      currQuestion.attempts = attempts + 1
+      found += item.found
+      attempts++
+      currQuestion.attempts = attempts
+      currQuestion.accuracy = found / attempts
     }
   })
+
+  console.log(stats)
 
   return stats
 }
@@ -90,7 +94,7 @@ function getSortedSessionStats(result) {
       } else {
         let currQuestion = questions.find(i => i.name === name)
         currQuestion.found = found + item.found
-        currQuestion.attempts = attempts + 1
+        currQuestion.attempts += 1
       }
       stats.push({session, questions})
     } else {
@@ -110,7 +114,7 @@ function getSortedSessionStats(result) {
       } else {
         let currQuestion = currSession.questions.find(i => i.name === name)
         currQuestion.found = found + item.found
-        currQuestion.attempts = attempts + 1
+        currQuestion.attempts += 1
       }
     }
   })

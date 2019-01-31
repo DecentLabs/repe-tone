@@ -32,7 +32,7 @@
         <div class="column">
           <div v-for="item in intervals" class="input-group">
             <input type="checkbox" :id="item.name+ 'int'" :value="item.name" :checked="intervalIsSelected(item.name)" @change="selectIntervals">
-            <label :for="item.name + 'int'">{{item.label}}</label>
+            <label :for="item.name + 'int'" :class="getIntervalProgress(item.name)">{{item.label}}</label>
           </div>
         </div>
       </div>
@@ -54,6 +54,7 @@
   import { intervals, addInterval, getRandomNote } from '../utils/intervals'
   import { getIntervalStats, getSortedSessionStats, getLastSession } from '../utils/stats'
   import { createQuestion, getQuestions, getSessionQuestions, updateQuestion, getQuestionsBySession } from '../store'
+  import { checkProgress } from '../utils/repeater'
 
   /* global Tone */
   /* eslint-disable no-console */
@@ -82,7 +83,8 @@
         counter: 0,
         started: false,
         questions: [],
-        overlayVisible: false
+        overlayVisible: false,
+        progress: []
       }
     },
     computed: {
@@ -117,18 +119,15 @@
         }
       },
       endSession() {
-        getQuestions().then(res => {
-          const result = res.payload.records
-
-          console.log(getSortedSessionStats(result))
-        })
         getQuestionsBySession(this.session).then(res => {
-          const result = res.payload.records
-          this.stats = getIntervalStats(result)
-          console.log('map', this.stats)
+          this.sessionStats = getIntervalStats(res.payload.records)
 
           this.started = false
           this.session++
+        })
+        getQuestions().then(res => {
+          this.allStats = getIntervalStats(res.payload.records)
+          this.progress = checkProgress(this.allStats)
         })
       },
       play () {
@@ -145,6 +144,10 @@
           updateQuestion(this.currentInterval.id, found).then(() => console.log('answer updated'))
           this.attempted = true
         }
+      },
+      getIntervalProgress(item) {
+        const interval = this.progress.find(i => i.name == item)
+        return interval && {good: interval.good, bad: interval.bad}
       },
       getRandomInterval () {
         const random = Math.floor(Math.random() * this.selectedIntervals.length)
@@ -188,6 +191,7 @@
 
       getQuestions().then(res => {
         this.allStats = getIntervalStats(res.payload.records)
+        this.progress = checkProgress(this.allStats)
       })
       getSessionQuestions().then(res => {
         this.session = res.payload.records.length && getLastSession(res.payload.records) + 1
@@ -196,7 +200,6 @@
   }
 </script>
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
   h3 {
     margin: 40px 0 0;
@@ -322,6 +325,25 @@
     color: #39f9c6;
     border: 2px solid #12f8be;
     font-weight: 700;
+  }
+
+  label.good::after,
+  label.bad::after {
+    content: '';
+    position: absolute;
+    top: calc(50% - 7px);
+    right: -30px;
+    width: 14px;
+    height: 14px;
+    border-radius: 100%;
+  }
+
+  label.good::after {
+    background: #e1bef9;
+  }
+
+  label.bad::after {
+    background: #b6bfce;
   }
 
   .input-group {
