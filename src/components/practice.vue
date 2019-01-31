@@ -4,7 +4,7 @@
     <h2>Hear the sound and tell the space</h2>
     <div class="playground">
       <button class="start" @click="startSession" v-if="!started">start session {{session}}</button>
-      <div v-if="started">
+      <div v-if="started" class="column">
         <button @click="play" class="play">play</button>
         <div class="row">
           <div class="input-group" v-for="interval in intervalAnswers">
@@ -134,8 +134,8 @@
       play () {
         const noteB = addInterval(this.startNote, this.currentInterval.name, this.selectedDirection)
 
-        this.sampler.triggerAttackRelease(this.startNote, '4n', 0, 0.8)
-        this.sampler.triggerAttackRelease(noteB, '4n', '4n', 0.8)
+        this.sampler.triggerAttack(this.startNote, '+8n', 0.8)
+        this.sampler.triggerAttack(noteB, '+2n', 0.8)
       },
       setAnswer () {
         this.result = this.answer === this.currentInterval.name
