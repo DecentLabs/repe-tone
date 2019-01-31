@@ -92,7 +92,7 @@ const instruments = [
 ]
 
 const samples = instruments.map(item => {
-  item.baseUrl = `/samples/${item.name}/`
+  item.baseUrl = `./samples/${item.name}/`
   return item
 })
 
