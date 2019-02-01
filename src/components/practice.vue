@@ -17,7 +17,7 @@
         <div v-if="result">yayy, got it!</div>
         <div class="loader" v-show="loading"></div>
       </div>
-      <button @click="toggleOverlay" class="stats">see stats</button>
+      <!--<button @click="toggleOverlay" class="stats">see stats</button>-->
     </div>
     <div class="settings">
       <div class="settings-column">
@@ -71,6 +71,7 @@
           {id: 'random', label: 'any direction'},
         ],
         direction: 'asc',
+        currentInterval: null,
         answer: '',
         result: false,
         allStats: [],
@@ -100,10 +101,7 @@
       },
       intervalIsSelected () {
         return (val) => this.selectedIntervals.indexOf(val) >= 0
-      },
-      currentInterval () {
-        return this.questions.length && this.questions[this.counter]
-      },
+      }
     },
     methods: {
       play () {
@@ -116,18 +114,19 @@
         this.loading = true
         setTimeout(() => {
           createQuestion(this.getRandomInterval()).then(({payload}) => {
-            this.questions.push(payload.records[0])
+            this.currentInterval = payload.records[0]
             this.loading = false
           })
         }, 1000)
       },
-      removeQuestion() {
-        const currentQuestion = this.questions[this.questions.length - 1]
-        return deleteQuestion(currentQuestion.id)
+      resetQuestion() {
+        deleteQuestion(this.currentInterval.id).then(() => {
+          this.addQuestion()
+        })
       },
       updateStats () {
-        getQuestions().then(res => {
-          this.allStats = getIntervalStats(res.payload.records)
+        return getQuestions().then(({payload}) => {
+          this.allStats = getIntervalStats(payload.records)
           this.progress = checkProgress(this.allStats)
         })
       },
@@ -136,19 +135,20 @@
         const found = this.result ? 1 : 0
 
         if (!this.attempted) {
-          updateQuestion(this.currentInterval.id, found).then(() => {
-            console.log('set answer')
-          })
           this.attempted = true
+
+          updateQuestion(this.currentInterval.id, found).then(() => {
+            this.updateStats()
+          })
         }
 
         if (this.result) {
           this.getNext()
         }
       },
-      getIntervalProgress (item) {
-        const interval = this.progress.find(i => i.name === item)
-        return interval && {good: interval.good, bad: interval.bad}
+      getIntervalProgress (name) {
+        const interval = this.progress.find(i => i.name === name)
+        return interval ? {good: interval.good, bad: interval.bad} : {good: false, bad: false}
       },
       getRandomInterval () {
         const random = Math.floor(Math.random() * this.selectedIntervals.length)
@@ -160,23 +160,18 @@
         this.result = false
         this.answer = ''
         this.attempted = false
-        this.updateStats()
         this.addQuestion()
       },
       selectIntervals (event) {
-        const currentInterval = event.target.value
-        if (this.selectedIntervals.length > 2 && this.selectedIntervals.indexOf(currentInterval) >= 0) {
-          console.log('select out')
-          this.selectedIntervals = this.selectedIntervals.filter(i => i !== currentInterval)
+        const selectedInterval = event.target.value
+        if (this.selectedIntervals.length > 2 && this.selectedIntervals.indexOf(selectedInterval) >= 0) {
+          this.selectedIntervals = this.selectedIntervals.filter(i => i !== selectedInterval)
         } else {
-          console.log('selected int push')
-          this.selectedIntervals.push(currentInterval)
+          this.selectedIntervals.push(selectedInterval)
         }
 
-        this.removeQuestion().then(() => {
-          this.addQuestion()
-        })
-
+        this.updateStats()
+        this.resetQuestion()
       },
       toggleOverlay() {
         this.overlayVisible = !this.overlayVisible
@@ -245,7 +240,7 @@
   }
 
   .playground .column {
-    height: 200px;
+    height: 230px;
   }
 
   .settings {
@@ -342,19 +337,21 @@
   label.bad::after {
     content: '';
     position: absolute;
-    top: calc(50% - 7px);
     right: -30px;
-    width: 14px;
-    height: 14px;
-    border-radius: 100%;
-  }
-
-  label.good::after {
+    width: 18px;
     background: #e1bef9;
   }
 
+  label.good::after {
+    top: calc(50% - 9px);
+    height: 18px;
+    border-radius: 100%;
+  }
+
   label.bad::after {
-    background: #b6bfce;
+    top: 50%;
+    height: 9px;
+    border-radius: 0 0 18px 18px;
   }
 
   .input-group {
