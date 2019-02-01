@@ -5,11 +5,11 @@
     <div class="playground">
       <div v-if="started" class="column">
         <h4>quest {{counter + 1}}</h4>
-        <button @click="play" class="play" :disabled="loading" :class="{disabled: loading}">play</button>
+        <button @click="play" class="play" :disabled="loading" :class="{disabled: loading}"  v-shortkey="['space']" @shortkey="play()">play</button>
         <div class="row">
-          <div class="input-group" v-for="interval in intervalAnswers">
+          <div class="input-group" v-for="(interval, index) in intervalAnswers">
             <input type="radio" name="answer" :id="interval.name + 'answer'" :value="interval.name" v-model="answer"
-                   @change="setAnswer">
+                   @change="setAnswer(interval.name)" v-shortkey="[(index+1)]" @shortkey="setAnswer(interval.name)">
             <label :for="interval.name + 'answer'">{{interval.label}}</label>
           </div>
         </div>
@@ -41,6 +41,10 @@
       </div>
     </div>
     <stats-overlay :stats="allStats" v-show="overlayVisible" @toggleOverlay="toggleOverlay"></stats-overlay>
+    <div class="row clearfix">
+      <pre>Hotkeys: [space] -> play, answers -> [1] [2] ...</pre>
+    </div>
+
   </div>
 </template>
 
@@ -130,7 +134,8 @@
           this.progress = checkProgress(this.allStats)
         })
       },
-      setAnswer () {
+      setAnswer (answer) {
+        this.answer = answer
         this.result = this.answer === this.currentInterval.name
         const found = this.result ? 1 : 0
 
