@@ -5,7 +5,7 @@
     <div class="playground">
       <div v-if="started" class="column">
         <h4>quest {{counter + 1}}</h4>
-        <button @click="play" class="play" :class="{disabled: loading}">play</button>
+        <button @click="play" class="play" :disabled="loading" :class="{disabled: loading}">play</button>
         <div class="row">
           <div class="input-group" v-for="interval in intervalAnswers">
             <input type="radio" name="answer" :id="interval.name + 'answer'" :value="interval.name" v-model="answer"
@@ -21,7 +21,7 @@
     </div>
     <div class="settings">
       <div class="settings-column">
-        <h2>direction</h2>
+        <h2>set direction</h2>
         <div class="column">
           <div class="input-group" v-for="dir in directionOptions">
             <input type="radio" name="direction" :id="dir.id" :value="dir.id" v-model="direction">
@@ -30,7 +30,7 @@
         </div>
       </div>
       <div class="settings-column">
-        <h2>select intervals</h2>
+        <h2>select intervals <span>(min. 2)</span></h2>
         <div class="column">
           <div v-for="item in intervals" class="input-group">
             <input type="checkbox" :id="item.name+ 'int'" :value="item.name" :checked="intervalIsSelected(item.name)"
@@ -165,15 +165,18 @@
       },
       selectIntervals (event) {
         const currentInterval = event.target.value
-
-        if (this.selectedIntervals.indexOf(currentInterval) > 0) {
+        if (this.selectedIntervals.length > 2 && this.selectedIntervals.indexOf(currentInterval) >= 0) {
+          console.log('select out')
           this.selectedIntervals = this.selectedIntervals.filter(i => i !== currentInterval)
         } else {
+          console.log('selected int push')
           this.selectedIntervals.push(currentInterval)
         }
+
         this.removeQuestion().then(() => {
           this.addQuestion()
         })
+
       },
       toggleOverlay() {
         this.overlayVisible = !this.overlayVisible
@@ -214,6 +217,11 @@
     color: #42b983;
   }
 
+  h2 span {
+    font-size: 18px;
+    font-weight: 400;
+  }
+
   .row {
     display: flex;
     justify-content: center;
@@ -233,7 +241,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 60px;
+    margin-bottom: 30px;
   }
 
   .playground .column {

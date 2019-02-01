@@ -5,8 +5,8 @@
       <div class="stats">
         <div class="stat-col">
           <div>Interval</div>
-          <div>Your attempts</div>
-          <div>Your accuracy</div>
+          <div>Attempts</div>
+          <div>Accuracy</div>
         </div>
         <div v-for="stat in stats" class="stat-col">
           <div>{{stat.name}}</div>
