@@ -1,4 +1,4 @@
-# tone-rep
+# RepeTone
 
 ## Project setup
 ```
