@@ -1,10 +1,18 @@
 <template>
   <div class="overlay" @click="close">
     <div class="overlay-inner">
-      <div v-for="stat in stats">
-        <div>{{stat.name}}</div>
-        <div>{{stat.attempts}}</div>
-        <div>{{stat.accuracy}}</div>
+      <h2>Your statistics</h2>
+      <div class="stats">
+        <div class="stat-col">
+          <div>Interval</div>
+          <div>Your attempts</div>
+          <div>Your accuracy</div>
+        </div>
+        <div v-for="stat in stats" class="stat-col">
+          <div>{{stat.name}}</div>
+          <div>{{stat.attempts}}</div>
+          <div>{{stat.accuracy}}</div>
+        </div>
       </div>
     </div>
   </div>
@@ -41,5 +49,22 @@
     padding: 40px;
     background: #fff;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .stats {
+    display: flex;
+  }
+
+  .stat-col div {
+    min-width: 50px;
+    margin-right: 20px;
+    margin-bottom: 10px;
+  }
+
+  .stat-col:first-of-type div {
+    text-align: left;
   }
 </style>

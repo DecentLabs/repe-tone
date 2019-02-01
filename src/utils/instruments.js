@@ -98,7 +98,6 @@ const samples = instruments.map(item => {
 
 const samplesByInstrument = (instrument) => samples.find(item => item.name = instrument)
 
-
 export {
   samples,
   samplesByInstrument

@@ -3,7 +3,6 @@
     <h1>RepeTone</h1>
     <h2>Hear the sound and tell the space</h2>
     <div class="playground">
-      <!--<button class="start" @click="startSession" v-if="!started">start session {{session}}</button>-->
       <div v-if="started" class="column">
         <h4>quest {{counter + 1}}</h4>
         <button @click="play" class="play" :class="{disabled: loading}">play</button>
@@ -17,9 +16,8 @@
         <div v-if="attempted && !result">it's not that, try again!</div>
         <div v-if="result">yayy, got it!</div>
         <div class="loader" v-show="loading"></div>
-        <!--<button @click="getNext" class="next" :class="result && 'show'">next</button>-->
       </div>
-      <!--<button @click="toggleOverlay" class="stats">see stats</button>-->
+      <button @click="toggleOverlay" class="stats">see stats</button>
     </div>
     <div class="settings">
       <div class="settings-column">
@@ -51,7 +49,7 @@
   import { samplesByInstrument } from '../utils/instruments'
   import { intervals, addInterval, getRandomNote } from '../utils/intervals'
   import { getIntervalStats, getLastSession } from '../utils/stats'
-  import { createQuestion, getQuestions, getSessionQuestions, updateQuestion, deleteQuestion } from '../store'
+  import { createQuestion, getQuestions, updateQuestion, deleteQuestion } from '../store'
   import { checkProgress } from '../utils/repeater'
 
   /* global Tone */
@@ -63,6 +61,7 @@
     data () {
       return {
         sampler: null,
+        instrument: 'piano',
         startNote: '',
         intervals,
         selectedIntervals: ['M3', 'P5'],
@@ -124,14 +123,12 @@
       },
       removeQuestion() {
         const currentQuestion = this.questions[this.questions.length - 1]
-        console.log(currentQuestion)
         return deleteQuestion(currentQuestion.id)
       },
       updateStats () {
         getQuestions().then(res => {
-          console.log(res.payload.records)
           this.allStats = getIntervalStats(res.payload.records)
-//          this.progress = checkProgress(this.allStats)
+          this.progress = checkProgress(this.allStats)
         })
       },
       setAnswer () {
@@ -183,8 +180,8 @@
       }
     },
     mounted () {
-      let piano = samplesByInstrument('piano')
-      this.sampler = new Tone.Sampler(piano.notes, {baseUrl: piano.baseUrl, release: 1})
+      let instrumentSample = samplesByInstrument(this.instrument)
+      this.sampler = new Tone.Sampler(instrumentSample.notes, {baseUrl: instrumentSample.baseUrl, release: 1})
 
       Tone.Buffer.on('load', () => {
         this.sampler.toMaster()
